@@ -1,0 +1,58 @@
+from django.db import models
+from django.contrib.auth.models import User
+from django.contrib.auth.hashers import make_password
+
+class ProjectDetail(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+class MeetingDetail(models.Model):
+    project = models.ForeignKey(ProjectDetail, on_delete=models.CASCADE, related_name='meetings')
+    title = models.CharField(max_length=255)
+    date = models.DateField()
+    time = models.TimeField()
+    organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='organized_meetings')
+    attendees = models.ManyToManyField(User, related_name='attended_meetings', blank=True)
+    agenda = models.TextField(blank=True, null=True)
+    minutes = models.TextField(blank=True, null=True)
+    action_items = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.project.name} ({self.date})"
+
+class UserProfile(models.Model):
+    ROLE_CHOICES = (
+        ('Admin', 'Admin'),
+        ('Standard', 'Standard'),
+    )
+    ACTIVE_CHOICES = (
+        ('Active', 'Active'),
+        ('Inactive', 'Inactive'),
+    )
+    first_name = models.CharField(max_length=150)
+    last_name = models.CharField(max_length=150)
+    emailid = models.EmailField(unique=True)
+    password = models.CharField(max_length=255)
+    active = models.CharField(max_length=10, choices=ACTIVE_CHOICES, default='Active')
+    last_login_date = models.CharField(max_length=10, null=True, blank=True)
+    last_login_time = models.CharField(max_length=8, null=True, blank=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='Standard')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if self.password:  # only hash if password is provided
+            if not self.password.startswith('pbkdf2_'):
+                self.password = make_password(self.password)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.emailid} ({self.role})"
