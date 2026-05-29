@@ -28,10 +28,10 @@ class Command(BaseCommand):
         self.stdout.write(self.style.WARNING("Isolated 'admin' superuser from UserProfile table."))
 
         # 2. Seed Admin user profile for Harshada Kale
-        h_first_name = 'Harshada'
-        h_last_name = 'Kale'
+        h_first_name = 'Admin'
+        h_last_name = 'A'
         h_emailid = 'harshadabk2309@gmail.com'
-        h_password = 'HarshadaK@23*/'
+        h_password = 'Admin@123*/'
         h_role = 'Admin'
         h_active = 'Active'
 
