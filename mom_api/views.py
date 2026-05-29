@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .models import ProjectDetail, MeetingDetail, UserProfile
+from .models import ProjectDetail, MeetingDetail, UserProfile, Client
 from .permissions import IsAdminUserRole
 from .serializers import (
     UserProfileSerializer, 
@@ -9,7 +9,8 @@ from .serializers import (
     MyTokenObtainPairSerializer,
     ProjectDetailSerializer, 
     MeetingDetailReadSerializer, 
-    MeetingDetailWriteSerializer
+    MeetingDetailWriteSerializer,
+    ClientSerializer
 )
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -54,6 +55,14 @@ class ProjectDetailViewSet(viewsets.ModelViewSet):
     """
     queryset = ProjectDetail.objects.all().order_by('-created_at')
     serializer_class = ProjectDetailSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class ClientViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows clients to be viewed or edited.
+    """
+    queryset = Client.objects.all().order_by('-created_at')
+    serializer_class = ClientSerializer
     permission_classes = [permissions.IsAuthenticated]
 
 class MeetingDetailViewSet(viewsets.ModelViewSet):

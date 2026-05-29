@@ -11,8 +11,25 @@ class ProjectDetail(models.Model):
     def __str__(self):
         return self.name
 
+class Client(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    company_name = models.CharField(max_length=255, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    phone = models.CharField(max_length=50, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
 class MeetingDetail(models.Model):
-    project = models.ForeignKey(ProjectDetail, on_delete=models.CASCADE, related_name='meetings')
+    MEETING_TYPES = (
+        ('Internal', 'Internal'),
+        ('External', 'External'),
+    )
+    meeting_type = models.CharField(max_length=10, choices=MEETING_TYPES, default='Internal')
+    project = models.ForeignKey(ProjectDetail, on_delete=models.CASCADE, related_name='meetings', null=True, blank=True)
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='meetings', null=True, blank=True)
     title = models.CharField(max_length=255)
     date = models.DateField()
     time = models.TimeField()
@@ -21,11 +38,13 @@ class MeetingDetail(models.Model):
     agenda = models.TextField(blank=True, null=True)
     minutes = models.TextField(blank=True, null=True)
     action_items = models.JSONField(default=list, blank=True)
+    follow_up_to = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='follow_ups')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.title} - {self.project.name} ({self.date})"
+        context_name = self.project.name if self.project else (self.client.name if self.client else "No Context")
+        return f"{self.title} - {context_name} ({self.date})"
 
 class UserProfile(models.Model):
     ROLE_CHOICES = (
