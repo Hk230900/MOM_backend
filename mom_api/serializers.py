@@ -44,12 +44,21 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         return data
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
+
     class Meta:
         model = UserProfile
         fields = [
-            'id', 'first_name', 'last_name', 'emailid', 
-            'active', 'last_login_date', 'last_login_time', 'role'
+            'user_id',
+            'first_name',
+            'last_name',
+            'emailid',
+            'active',
+            'last_login_date',
+            'last_login_time',
+            'role'
         ]
+
 
 class UserProfileWriteSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False)
