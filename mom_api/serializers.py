@@ -57,7 +57,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'active',
             'last_login_date',
             'last_login_time',
-            'role'
+            'role',
+            'organization'
         ]
 
 
@@ -66,7 +67,7 @@ class UserProfileWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = ['id', 'first_name', 'last_name', 'emailid', 'password', 'active', 'role']
+        fields = ['id', 'first_name', 'last_name', 'emailid', 'password', 'active', 'role', 'organization']
 
     def create(self, validated_data):
         password = validated_data.get('password', None)
@@ -124,7 +125,7 @@ class UserProfileWriteSerializer(serializers.ModelSerializer):
 class ProjectDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectDetail
-        fields = ['id', 'name', 'description', 'is_archit_related', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'description', 'organization', 'created_at', 'updated_at']
 
 class ClientSerializer(serializers.ModelSerializer):
     class Meta:

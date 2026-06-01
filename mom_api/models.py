@@ -5,7 +5,7 @@ from django.contrib.auth.hashers import make_password
 class ProjectDetail(models.Model):
     name = models.CharField(max_length=255, unique=True)
     description = models.TextField(blank=True, null=True)
-    is_archit_related = models.BooleanField(default=False)
+    organization = models.CharField(max_length=50, default='iSyra')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -64,6 +64,7 @@ class UserProfile(models.Model):
     last_login_date = models.CharField(max_length=10, null=True, blank=True)
     last_login_time = models.CharField(max_length=8, null=True, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='Standard')
+    organization = models.CharField(max_length=50, default='iSyra')
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
