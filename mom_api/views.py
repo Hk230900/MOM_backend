@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .models import ProjectDetail, MeetingDetail, UserProfile, Client
+from .models import ProjectDetail, MeetingDetail, UserProfile, Reminder, PushSubscription
 from .permissions import IsAdminUserRole
 from .serializers import (
     UserProfileSerializer, 
@@ -10,7 +10,8 @@ from .serializers import (
     ProjectDetailSerializer, 
     MeetingDetailReadSerializer, 
     MeetingDetailWriteSerializer,
-    ClientSerializer
+    ReminderSerializer,
+    PushSubscriptionSerializer
 )
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -57,14 +58,6 @@ class ProjectDetailViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectDetailSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-class ClientViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows clients to be viewed or edited.
-    """
-    queryset = Client.objects.all().order_by('-created_at')
-    serializer_class = ClientSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
 class MeetingDetailViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows meetings to be viewed or edited.
@@ -106,3 +99,72 @@ class MeetingDetailViewSet(viewsets.ModelViewSet):
         read_serializer = MeetingDetailReadSerializer(instance)
         from rest_framework.response import Response
         return Response(read_serializer.data)
+
+
+class ReminderViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ReminderSerializer
+    queryset = Reminder.objects.all()
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user).order_by('date', 'time')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class PushSubscriptionViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PushSubscriptionSerializer
+    queryset = PushSubscription.objects.all()
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        
+        # Extract keys if structure is { endpoint: "...", keys: { p256dh: "...", auth: "..." } }
+        keys = data.get('keys', {})
+        if 'p256dh' in keys:
+            data['p256dh'] = keys['p256dh']
+        if 'auth' in keys:
+            data['auth'] = keys['auth']
+            
+        endpoint = data.get('endpoint')
+        if not endpoint:
+            from rest_framework import status
+            from rest_framework.response import Response
+            return Response({"detail": "Endpoint is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        existing = PushSubscription.objects.filter(endpoint=endpoint).first()
+        if existing:
+            # Update user and keys for the existing endpoint if changed
+            existing.user = request.user
+            if 'p256dh' in data:
+                existing.p256dh = data['p256dh']
+            if 'auth' in data:
+                existing.auth = data['auth']
+            existing.save()
+            serializer = self.get_serializer(existing)
+            from rest_framework.response import Response
+            return Response(serializer.data)
+            
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
+        from rest_framework.response import Response
+        from rest_framework import status
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from django.conf import settings
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def vapid_public_key(request):
+    vapid_key = getattr(settings, 'VAPID_PUBLIC_KEY', '')
+    return Response({"publicKey": vapid_key})
+

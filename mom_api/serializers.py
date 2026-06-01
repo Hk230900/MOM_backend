@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import ProjectDetail, MeetingDetail, UserProfile, Client
+from .models import ProjectDetail, MeetingDetail, UserProfile, Reminder, PushSubscription
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -49,7 +49,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = [
-            'id',
             'user_id',
             'first_name',
             'last_name',
@@ -57,8 +56,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'active',
             'last_login_date',
             'last_login_time',
-            'role',
-            'organization'
+            'role'
         ]
 
 
@@ -67,7 +65,7 @@ class UserProfileWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = ['id', 'first_name', 'last_name', 'emailid', 'password', 'active', 'role', 'organization']
+        fields = ['id', 'first_name', 'last_name', 'emailid', 'password', 'active', 'role']
 
     def create(self, validated_data):
         password = validated_data.get('password', None)
@@ -125,12 +123,7 @@ class UserProfileWriteSerializer(serializers.ModelSerializer):
 class ProjectDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectDetail
-        fields = ['id', 'name', 'description', 'organization', 'created_at', 'updated_at']
-
-class ClientSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Client
-        fields = ['id', 'name', 'company_name', 'email', 'phone', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'description', 'created_at', 'updated_at']
 
 # Re-use standard User mappings for meeting details views
 class MeetingUserSerializer(serializers.ModelSerializer):
@@ -138,34 +131,26 @@ class MeetingUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name']
 
-class SimpleMeetingSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = MeetingDetail
-        fields = ['id', 'title', 'date', 'time']
-
 class MeetingDetailReadSerializer(serializers.ModelSerializer):
     project = ProjectDetailSerializer(read_only=True)
-    client = ClientSerializer(read_only=True)
     organizer = MeetingUserSerializer(read_only=True)
     attendees = MeetingUserSerializer(many=True, read_only=True)
-    follow_up_to = SimpleMeetingSerializer(read_only=True)
-    follow_ups = SimpleMeetingSerializer(many=True, read_only=True)
 
     class Meta:
         model = MeetingDetail
         fields = [
-            'id', 'meeting_type', 'project', 'client', 'title', 'date', 'time', 
+            'id', 'project', 'title', 'date', 'time', 
             'organizer', 'attendees', 'agenda', 'minutes', 
-            'action_items', 'follow_up_to', 'follow_ups', 'created_at', 'updated_at'
+            'action_items', 'created_at', 'updated_at'
         ]
 
 class MeetingDetailWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = MeetingDetail
         fields = [
-            'id', 'meeting_type', 'project', 'client', 'title', 'date', 'time', 
+            'id', 'project', 'title', 'date', 'time', 
             'organizer', 'attendees', 'agenda', 'minutes', 
-            'action_items', 'follow_up_to'
+            'action_items'
         ]
 
     def validate_action_items(self, value):
@@ -173,16 +158,16 @@ class MeetingDetailWriteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Action items must be a list of objects.")
         return value
 
-    def validate(self, attrs):
-        meeting_type = attrs.get('meeting_type', 'Internal')
-        if meeting_type == 'Internal':
-            if not attrs.get('project'):
-                raise serializers.ValidationError({"project": "Project is required for internal meetings."})
-            # Clear client if set
-            attrs['client'] = None
-        elif meeting_type == 'External':
-            if not attrs.get('client'):
-                raise serializers.ValidationError({"client": "Client is required for external meetings."})
-            # Clear project if set
-            attrs['project'] = None
-        return attrs
+
+class ReminderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Reminder
+        fields = ['id', 'title', 'description', 'date', 'time', 'is_sent', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'is_sent', 'created_at', 'updated_at']
+
+
+class PushSubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PushSubscription
+        fields = ['id', 'endpoint', 'p256dh', 'auth']
+

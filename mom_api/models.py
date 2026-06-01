@@ -77,3 +77,29 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.emailid} ({self.role})"
+
+
+class Reminder(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reminders')
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    date = models.DateField()
+    time = models.TimeField()
+    is_sent = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Reminder: {self.title} for {self.user.username} on {self.date} at {self.time}"
+
+
+class PushSubscription(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='push_subscriptions')
+    endpoint = models.TextField(unique=True)
+    p256dh = models.CharField(max_length=255)
+    auth = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"PushSubscription for {self.user.username}"
+
