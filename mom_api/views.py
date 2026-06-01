@@ -1,13 +1,14 @@
 from rest_framework import viewsets, permissions
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .models import ProjectDetail, MeetingDetail, UserProfile, Reminder, PushSubscription
+from .models import ProjectDetail, MeetingDetail, UserProfile, Client, Reminder, PushSubscription
 from .permissions import IsAdminUserRole
 from .serializers import (
     UserProfileSerializer, 
     UserProfileWriteSerializer,
     MyTokenObtainPairSerializer,
     ProjectDetailSerializer, 
+    ClientSerializer,
     MeetingDetailReadSerializer, 
     MeetingDetailWriteSerializer,
     ReminderSerializer,
@@ -50,12 +51,21 @@ class UserViewSet(viewsets.ModelViewSet):
         if auth_user:
             auth_user.delete()
         return response
+
 class ProjectDetailViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows projects to be viewed or edited.
     """
     queryset = ProjectDetail.objects.all().order_by('-created_at')
     serializer_class = ProjectDetailSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class ClientViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows clients to be viewed or edited.
+    """
+    queryset = Client.objects.all().order_by('-created_at')
+    serializer_class = ClientSerializer
     permission_classes = [permissions.IsAuthenticated]
 
 class MeetingDetailViewSet(viewsets.ModelViewSet):
@@ -100,7 +110,6 @@ class MeetingDetailViewSet(viewsets.ModelViewSet):
         from rest_framework.response import Response
         return Response(read_serializer.data)
 
-
 class ReminderViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ReminderSerializer
@@ -111,7 +120,6 @@ class ReminderViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
 
 class PushSubscriptionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -157,7 +165,6 @@ class PushSubscriptionViewSet(viewsets.ModelViewSet):
         from rest_framework import status
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.conf import settings
@@ -167,4 +174,3 @@ from django.conf import settings
 def vapid_public_key(request):
     vapid_key = getattr(settings, 'VAPID_PUBLIC_KEY', '')
     return Response({"publicKey": vapid_key})
-
