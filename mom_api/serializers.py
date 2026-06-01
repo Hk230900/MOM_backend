@@ -124,7 +124,7 @@ class UserProfileWriteSerializer(serializers.ModelSerializer):
 class ProjectDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectDetail
-        fields = ['id', 'name', 'description', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'description', 'is_archit_related', 'created_at', 'updated_at']
 
 class ClientSerializer(serializers.ModelSerializer):
     class Meta:
