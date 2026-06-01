@@ -123,7 +123,7 @@ class UserProfileWriteSerializer(serializers.ModelSerializer):
 class ProjectDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectDetail
-        fields = ['id', 'name', 'description', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'description', 'organization', 'created_at', 'updated_at']
 
 # Re-use standard User mappings for meeting details views
 class MeetingUserSerializer(serializers.ModelSerializer):
