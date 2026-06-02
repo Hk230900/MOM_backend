@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
+    'anymail',
     'mom_api',
 ]
 
@@ -152,14 +153,19 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Email Configuration
-EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='anymail.backends.resend.EmailBackend')
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='harshadabk2309@gmail.com')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='harshadabk2309@gmail.com')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='onboarding@resend.dev')
 EMAIL_TIMEOUT = config('EMAIL_TIMEOUT', default=5, cast=int)
+
+# Anymail Settings (Resend HTTP API)
+ANYMAIL = {
+    "RESEND_API_KEY": config('RESEND_API_KEY', default=''),
+}
 
 # Web Push Configuration (VAPID)
 VAPID_PUBLIC_KEY = config('VAPID_PUBLIC_KEY', default='')
