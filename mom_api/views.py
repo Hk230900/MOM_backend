@@ -116,6 +116,15 @@ class ReminderViewSet(viewsets.ModelViewSet):
     queryset = Reminder.objects.all()
 
     def get_queryset(self):
+        import threading
+        from django.core.management import call_command
+        def run_dispatch():
+            try:
+                call_command('send_reminders')
+            except Exception as e:
+                print(f"Error running send_reminders command: {e}")
+        
+        threading.Thread(target=run_dispatch, daemon=True).start()
         return self.queryset.filter(user=self.request.user).order_by('date', 'time')
 
     def perform_create(self, serializer):

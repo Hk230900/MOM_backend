@@ -86,6 +86,7 @@ class Reminder(models.Model):
     date = models.DateField()
     time = models.TimeField()
     is_sent = models.BooleanField(default=False)
+    is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

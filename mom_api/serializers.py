@@ -26,7 +26,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         profile = UserProfile.objects.filter(user=user).first()
         if profile:
             from django.utils import timezone
-            now = timezone.now()
+            now = timezone.localtime(timezone.now())
             profile.last_login_date = now.strftime("%d-%m-%Y")
             profile.last_login_time = now.strftime("%H:%M:%S")
             profile.save(update_fields=['last_login_date', 'last_login_time'])
@@ -189,7 +189,7 @@ class MeetingDetailWriteSerializer(serializers.ModelSerializer):
 class ReminderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reminder
-        fields = ['id', 'title', 'description', 'date', 'time', 'is_sent', 'created_at', 'updated_at']
+        fields = ['id', 'title', 'description', 'date', 'time', 'is_sent', 'is_read', 'created_at', 'updated_at']
         read_only_fields = ['id', 'is_sent', 'created_at', 'updated_at']
 
 class PushSubscriptionSerializer(serializers.ModelSerializer):
