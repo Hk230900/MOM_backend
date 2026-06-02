@@ -40,6 +40,8 @@ class MeetingDetail(models.Model):
     minutes = models.TextField(blank=True, null=True)
     action_items = models.JSONField(default=list, blank=True)
     follow_up_to = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='follow_ups')
+    notification_24h_sent = models.BooleanField(default=False)
+    notification_1h_sent = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
