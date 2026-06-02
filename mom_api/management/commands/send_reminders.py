@@ -78,6 +78,7 @@ class Command(BaseCommand):
                         self.stdout.write(self.style.ERROR(f"Failed to send email to {user_email}: {e}"))
                 else:
                     self.stdout.write(self.style.WARNING(f"User {user.username} has no email address. Skipping email."))
+                    email_sent = True
 
                 # 2. Send Web Push Notification
                 push_subscriptions = PushSubscription.objects.filter(user=user)
@@ -123,9 +124,12 @@ class Command(BaseCommand):
                 else:
                     self.stdout.write(self.style.WARNING(f"User {user.username} has no active web push subscriptions."))
 
-                # Mark reminder as sent
-                reminder.is_sent = True
-                reminder.save()
-                self.stdout.write(self.style.SUCCESS(f"Reminder {reminder.id} marked as sent."))
+                # Mark reminder as sent only if email dispatch succeeded
+                if email_sent:
+                    reminder.is_sent = True
+                    reminder.save()
+                    self.stdout.write(self.style.SUCCESS(f"Reminder {reminder.id} marked as sent."))
+                else:
+                    self.stdout.write(self.style.ERROR(f"Reminder {reminder.id} not marked as sent due to email failure."))
 
         self.stdout.write(self.style.SUCCESS("Reminder dispatch completed."))
