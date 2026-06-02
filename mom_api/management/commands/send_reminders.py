@@ -2,7 +2,6 @@ import json
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.conf import settings
-from django.core.mail import send_mail
 from django.db.models import Q
 from django.db import transaction
 from mom_api.models import Reminder, PushSubscription
@@ -16,7 +15,7 @@ except ImportError:
 
 
 class Command(BaseCommand):
-    help = "Dispatches due calendar reminders via Email and Web Push Notifications"
+    help = "Dispatches due calendar reminders via Web Push Notifications"
 
     def handle(self, *args, **options):
         self.stdout.write(self.style.SUCCESS("Starting reminder dispatch check..."))
@@ -46,41 +45,9 @@ class Command(BaseCommand):
                 user = reminder.user
                 title = reminder.title
                 desc = reminder.description or ""
-                date_str = reminder.date.strftime("%d-%m-%Y")
                 time_str = reminder.time.strftime("%I:%M %p")
 
-                # 1. Send Email Notification
-                email_sent = False
-                user_email = getattr(user, 'email', None)
-                if hasattr(user, 'profile') and user.profile.emailid:
-                    user_email = user.profile.emailid
-
-                if user_email:
-                    subject = f"MOM Reminder: {title}"
-                    message = (
-                        f"Hello {user.first_name or user.username},\n\n"
-                        f"This is a reminder for: \"{title}\"\n"
-                        f"Details: {desc}\n"
-                        f"Scheduled for: {date_str} at {time_str}\n\n"
-                        f"Best regards,\nMOM Manager Admin"
-                    )
-                    try:
-                        send_mail(
-                            subject,
-                            message,
-                            settings.DEFAULT_FROM_EMAIL,
-                            [user_email],
-                            fail_silently=False,
-                        )
-                        email_sent = True
-                        self.stdout.write(self.style.SUCCESS(f"Sent email to {user_email} for reminder: {title}"))
-                    except Exception as e:
-                        self.stdout.write(self.style.ERROR(f"Failed to send email to {user_email}: {e}"))
-                else:
-                    self.stdout.write(self.style.WARNING(f"User {user.username} has no email address. Skipping email."))
-                    email_sent = True
-
-                # 2. Send Web Push Notification
+                # Send Web Push Notification
                 push_subscriptions = PushSubscription.objects.filter(user=user)
                 push_count = push_subscriptions.count()
                 
