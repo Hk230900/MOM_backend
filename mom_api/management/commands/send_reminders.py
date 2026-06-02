@@ -124,12 +124,9 @@ class Command(BaseCommand):
                 else:
                     self.stdout.write(self.style.WARNING(f"User {user.username} has no active web push subscriptions."))
 
-                # Mark reminder as sent only if email dispatch succeeded
-                if email_sent:
-                    reminder.is_sent = True
-                    reminder.save()
-                    self.stdout.write(self.style.SUCCESS(f"Reminder {reminder.id} marked as sent."))
-                else:
-                    self.stdout.write(self.style.ERROR(f"Reminder {reminder.id} not marked as sent due to email failure."))
+                # Mark reminder as sent
+                reminder.is_sent = True
+                reminder.save()
+                self.stdout.write(self.style.SUCCESS(f"Reminder {reminder.id} marked as sent."))
 
         self.stdout.write(self.style.SUCCESS("Reminder dispatch completed."))
