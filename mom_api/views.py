@@ -236,16 +236,13 @@ class GoogleSheetIntegrationViewSet(viewsets.ModelViewSet):
     def sync_meetings(self, request, pk=None):
         integration = self.get_object()
         project = integration.project
-        meetings = MeetingDetail.objects.filter(project=project)
+        meetings = MeetingDetail.objects.filter(project=project).order_by('date', 'time')
         
         if not meetings.exists():
             return Response({"status": "warning", "message": "No meetings found for this project to sync."})
             
-        from .google_sheets import sync_meeting_to_google_sheet
-        count = 0
-        for meeting in meetings:
-            sync_meeting_to_google_sheet(meeting)
-            count += 1
+        from .google_sheets import sync_multiple_meetings
+        sync_multiple_meetings(integration, list(meetings))
             
-        return Response({"status": "success", "message": f"Kicked off synchronization for {count} meetings in the background."})
+        return Response({"status": "success", "message": f"Kicked off sequential synchronization for {meetings.count()} meetings in the background."})
 

@@ -102,7 +102,7 @@ def perform_sync(integration, data):
                 data["title"],
                 data["mom_details"],
                 "", # Assigned Task
-                "", # Per task status
+                "Pending", # Per task status
                 data["meeting_id"],
                 -1
             ])
@@ -208,3 +208,58 @@ def sync_meeting_to_google_sheet(meeting):
             integration.save(update_fields=['last_sync_status', 'last_sync_error', 'last_sync_at'])
             
     threading.Thread(target=run_sync, daemon=True).start()
+
+
+def sync_multiple_meetings(integration, meetings):
+    """
+    Spawns a single background thread that synchronizes multiple meetings sequentially.
+    This prevents race conditions (concurrency issues) on the Google Sheet.
+    """
+    def run_bulk_sync():
+        last_error = None
+        
+        for meeting in meetings:
+            day_name = meeting.date.strftime("%A")
+            formatted_actions = []
+            if meeting.action_items and isinstance(meeting.action_items, list):
+                for item in meeting.action_items:
+                    task_text = item.get("text", "")
+                    assignee_name = item.get("assignee_name", "")
+                    if not assignee_name and item.get("assignees"):
+                        assignee_name = ", ".join([a.get("name", "") for a in item["assignees"]])
+                    
+                    formatted_actions.append({
+                        "task": task_text,
+                        "assignee": assignee_name,
+                        "completed": item.get("completed", False)
+                    })
+                    
+            meeting_data = {
+                "meeting_id": meeting.id,
+                "title": meeting.title,
+                "date": meeting.date.strftime("%Y-%m-%d"),
+                "day": day_name,
+                "mom_details": meeting.minutes or "",
+                "action_items": formatted_actions,
+                "last_updated": timezone.localtime(meeting.updated_at).strftime("%Y-%m-%d %H:%M:%S")
+            }
+            
+            try:
+                perform_sync(integration, meeting_data)
+            except Exception as e:
+                logger.error(f"Bulk sync: Error syncing meeting {meeting.id}: {e}")
+                last_error = str(e)
+            
+        # Update integration status once completed
+        if last_error:
+            integration.last_sync_status = 'Failed'
+            integration.last_sync_error = f"Bulk sync failed for some meetings. Last error: {last_error}"
+        else:
+            integration.last_sync_status = 'Success'
+            integration.last_sync_error = None
+            
+        integration.last_sync_at = timezone.now()
+        integration.save(update_fields=['last_sync_status', 'last_sync_error', 'last_sync_at'])
+        
+    threading.Thread(target=run_bulk_sync, daemon=True).start()
+
