@@ -106,3 +106,41 @@ class PushSubscription(models.Model):
     def __str__(self):
         return f"PushSubscription for {self.user.username}"
 
+
+class GoogleSheetIntegration(models.Model):
+    INTEGRATION_TYPES = (
+        ('webhook', 'Google Apps Script Webhook'),
+        ('service_account', 'Service Account'),
+    )
+    project = models.OneToOneField(ProjectDetail, on_delete=models.CASCADE, related_name='google_sheet_integration')
+    integration_type = models.CharField(max_length=20, choices=INTEGRATION_TYPES, default='webhook')
+    
+    # Webhook fields
+    webhook_url = models.URLField(max_length=500, blank=True, null=True)
+    
+    # Service account fields
+    spreadsheet_id = models.CharField(max_length=255, blank=True, null=True)
+    sheet_name = models.CharField(max_length=100, default='Meetings', blank=True, null=True)
+    credentials_json = models.TextField(
+        blank=True, 
+        null=True, 
+        help_text="Paste your Google Service Account JSON credentials here if using Service Account."
+    )
+    
+    # Status fields
+    is_active = models.BooleanField(default=True)
+    last_sync_status = models.CharField(
+        max_length=20, 
+        blank=True, 
+        null=True, 
+        choices=(('Success', 'Success'), ('Failed', 'Failed'))
+    )
+    last_sync_error = models.TextField(blank=True, null=True)
+    last_sync_at = models.DateTimeField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Sheets Sync for {self.project.name}"
+

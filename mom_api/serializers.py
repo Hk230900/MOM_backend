@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import ProjectDetail, MeetingDetail, UserProfile, Client, Reminder, PushSubscription
+from .models import ProjectDetail, MeetingDetail, UserProfile, Client, Reminder, PushSubscription, GoogleSheetIntegration
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -196,3 +196,21 @@ class PushSubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = PushSubscription
         fields = ['id', 'endpoint', 'p256dh', 'auth']
+
+
+class GoogleSheetIntegrationSerializer(serializers.ModelSerializer):
+    project_name = serializers.CharField(source='project.name', read_only=True)
+    
+    class Meta:
+        model = GoogleSheetIntegration
+        fields = [
+            'id', 'project', 'project_name', 'integration_type', 
+            'webhook_url', 'spreadsheet_id', 'sheet_name', 
+            'credentials_json', 'is_active', 'created_at', 'updated_at',
+            'last_sync_status', 'last_sync_error', 'last_sync_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'last_sync_status', 'last_sync_error', 'last_sync_at']
+        extra_kwargs = {
+            'credentials_json': {'write_only': True}
+        }
+

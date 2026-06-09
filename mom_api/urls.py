@@ -7,6 +7,7 @@ from .views import (
     MeetingDetailViewSet,
     ReminderViewSet,
     PushSubscriptionViewSet,
+    GoogleSheetIntegrationViewSet,
     vapid_public_key
 )
 
@@ -17,6 +18,7 @@ router.register(r'clients', ClientViewSet, basename='client')
 router.register(r'meetings', MeetingDetailViewSet, basename='meeting')
 router.register(r'reminders', ReminderViewSet, basename='reminder')
 router.register(r'webpush/subscribe', PushSubscriptionViewSet, basename='webpush-subscribe')
+router.register(r'google-sheet-integrations', GoogleSheetIntegrationViewSet, basename='google-sheet-integration')
 
 urlpatterns = [
     path('', include(router.urls)),

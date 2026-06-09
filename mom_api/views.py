@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .models import ProjectDetail, MeetingDetail, UserProfile, Client, Reminder, PushSubscription
+from .models import ProjectDetail, MeetingDetail, UserProfile, Client, Reminder, PushSubscription, GoogleSheetIntegration
 from .permissions import IsAdminUserRole
 from .serializers import (
     UserProfileSerializer, 
@@ -12,7 +12,8 @@ from .serializers import (
     MeetingDetailReadSerializer, 
     MeetingDetailWriteSerializer,
     ReminderSerializer,
-    PushSubscriptionSerializer
+    PushSubscriptionSerializer,
+    GoogleSheetIntegrationSerializer
 )
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -183,3 +184,68 @@ from django.conf import settings
 def vapid_public_key(request):
     vapid_key = getattr(settings, 'VAPID_PUBLIC_KEY', '')
     return Response({"publicKey": vapid_key})
+
+
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status
+
+class GoogleSheetIntegrationViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows Google Sheet integration settings to be managed (Admin only).
+    """
+    queryset = GoogleSheetIntegration.objects.all().order_by('-created_at')
+    serializer_class = GoogleSheetIntegrationSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdminUserRole]
+
+    @action(detail=True, methods=['post'])
+    def test_integration(self, request, pk=None):
+        integration = self.get_object()
+        
+        # Create mock meeting details for testing
+        mock_data = {
+            "meeting_id": 9999,
+            "title": f"MOM - Test Sync ({integration.project.name})",
+            "date": "2026-06-09",
+            "day": "Tuesday",
+            "mom_details": "This is a test meeting generated automatically to verify the Google Sheets synchronization connection.",
+            "action_items": [
+                {"task": "Verify Google Sheets Integration Connection", "assignee": "System Admin", "completed": False},
+                {"task": "Confirm status cell formatting", "assignee": "QA Analyst", "completed": True}
+            ],
+            "last_updated": "2026-06-09 12:00:00"
+        }
+        
+        from .google_sheets import perform_sync
+        try:
+            perform_sync(integration, mock_data)
+            integration.last_sync_status = 'Success'
+            integration.last_sync_error = None
+            integration.save(update_fields=['last_sync_status', 'last_sync_error'])
+            return Response({"status": "success", "message": "Test sync executed successfully. Row appended to sheet!"})
+        except Exception as e:
+            integration.last_sync_status = 'Failed'
+            integration.last_sync_error = str(e)
+            integration.save(update_fields=['last_sync_status', 'last_sync_error'])
+            return Response(
+                {"status": "error", "message": f"Test sync failed: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=True, methods=['post'])
+    def sync_meetings(self, request, pk=None):
+        integration = self.get_object()
+        project = integration.project
+        meetings = MeetingDetail.objects.filter(project=project)
+        
+        if not meetings.exists():
+            return Response({"status": "warning", "message": "No meetings found for this project to sync."})
+            
+        from .google_sheets import sync_meeting_to_google_sheet
+        count = 0
+        for meeting in meetings:
+            sync_meeting_to_google_sheet(meeting)
+            count += 1
+            
+        return Response({"status": "success", "message": f"Kicked off synchronization for {count} meetings in the background."})
+
